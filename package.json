@@ -1,5 +1,5 @@
 {
-  "name": "mcp-audit",
+  "name": "@royalpinto007/mcp-audit",
   "version": "0.1.0",
   "description": "A security scanner and linter for Model Context Protocol (MCP) servers. Like npm audit / eslint, but for MCP.",
   "keywords": [
