@@ -1,0 +1,8 @@
+{
+  "failOn": "high",
+  "disabledRules": ["MCP013"],
+  "severityOverrides": {
+    "MCP011": "info"
+  },
+  "ignore": ["fetch_url.note"]
+}
