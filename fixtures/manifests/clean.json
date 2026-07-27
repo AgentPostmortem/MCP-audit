@@ -1,0 +1,19 @@
+{
+  "server": { "name": "weather-mcp", "version": "2.0.1" },
+  "tools": [
+    {
+      "name": "get_forecast",
+      "description": "Return a 3-day forecast for a supported city.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "city": { "type": "string", "enum": ["london", "tokyo", "paris"] }
+        },
+        "required": ["city"],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "resources": [],
+  "prompts": []
+}
