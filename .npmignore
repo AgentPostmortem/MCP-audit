@@ -1,0 +1,11 @@
+# Source and dev artifacts are excluded from the published package;
+# only dist/, README, and LICENSE ship (see package.json "files").
+src/
+test/
+fixtures/
+examples/
+.github/
+tsconfig.json
+vitest.config.ts
+CHANGELOG.md
+*.tsbuildinfo
