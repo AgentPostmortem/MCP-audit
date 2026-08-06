@@ -8,7 +8,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
 ```bash
-npx @AgentPostmortem/mcp-audit stdio "node my-mcp-server.js"
+npx @royalpinto007/mcp-audit stdio "node my-mcp-server.js"
 ```
 
 ## Why
@@ -36,16 +36,16 @@ SARIF output for GitHub code scanning.
 
 ```bash
 # Audit a server you spawn over stdio
-npx @AgentPostmortem/mcp-audit stdio "node my-mcp-server.js"
+npx @royalpinto007/mcp-audit stdio "node my-mcp-server.js"
 
 # Audit a remote server over HTTP (with a bearer token)
-npx @AgentPostmortem/mcp-audit http https://mcp.example.com/mcp --token "$MCP_TOKEN"
+npx @royalpinto007/mcp-audit http https://mcp.example.com/mcp --token "$MCP_TOKEN"
 
 # Lint a server's declared surface from a manifest, without running it
-npx @AgentPostmortem/mcp-audit static ./mcp-manifest.json
+npx @royalpinto007/mcp-audit static ./mcp-manifest.json
 
 # List every built-in rule
-npx @AgentPostmortem/mcp-audit rules
+npx @royalpinto007/mcp-audit rules
 ```
 
 ## Example output
@@ -148,7 +148,7 @@ Severities, lowest to highest: `info`, `low`, `medium`, `high`, `critical`.
 show up as annotations in GitHub code scanning.
 
 ```yaml
-- run: npx @AgentPostmortem/mcp-audit static ./mcp-manifest.json --sarif --output mcp-audit.sarif --fail-on critical
+- run: npx @royalpinto007/mcp-audit static ./mcp-manifest.json --sarif --output mcp-audit.sarif --fail-on critical
 - uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: mcp-audit.sarif
