@@ -79,7 +79,7 @@ export function renderSarif(result: AuditResult, rules: Rule[]): string {
         tool: {
           driver: {
             name: "mcp-audit",
-            informationUri: "https://github.com/royalpinto007/mcp-audit",
+            informationUri: "https://github.com/AgentPostmortem/mcp-audit",
             version: "0.1.0",
             rules: ruleDescriptors,
           },

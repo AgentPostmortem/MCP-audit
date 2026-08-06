@@ -2,13 +2,13 @@
 
 > Security scanner and linter for Model Context Protocol (MCP) servers. Like `npm audit` and `eslint`, but for the tools you hand your AI agents.
 
-[![CI](https://github.com/royalpinto007/mcp-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/royalpinto007/mcp-audit/actions/workflows/ci.yml)
+[![CI](https://github.com/AgentPostmortem/mcp-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/AgentPostmortem/mcp-audit/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/mcp-audit.svg)](https://www.npmjs.com/package/mcp-audit)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
 ```bash
-npx @royalpinto007/mcp-audit stdio "node my-mcp-server.js"
+npx @AgentPostmortem/mcp-audit stdio "node my-mcp-server.js"
 ```
 
 ## Why
@@ -36,16 +36,16 @@ SARIF output for GitHub code scanning.
 
 ```bash
 # Audit a server you spawn over stdio
-npx @royalpinto007/mcp-audit stdio "node my-mcp-server.js"
+npx @AgentPostmortem/mcp-audit stdio "node my-mcp-server.js"
 
 # Audit a remote server over HTTP (with a bearer token)
-npx @royalpinto007/mcp-audit http https://mcp.example.com/mcp --token "$MCP_TOKEN"
+npx @AgentPostmortem/mcp-audit http https://mcp.example.com/mcp --token "$MCP_TOKEN"
 
 # Lint a server's declared surface from a manifest, without running it
-npx @royalpinto007/mcp-audit static ./mcp-manifest.json
+npx @AgentPostmortem/mcp-audit static ./mcp-manifest.json
 
 # List every built-in rule
-npx @royalpinto007/mcp-audit rules
+npx @AgentPostmortem/mcp-audit rules
 ```
 
 ## Example output
@@ -148,7 +148,7 @@ Severities, lowest to highest: `info`, `low`, `medium`, `high`, `critical`.
 show up as annotations in GitHub code scanning.
 
 ```yaml
-- run: npx @royalpinto007/mcp-audit static ./mcp-manifest.json --sarif --output mcp-audit.sarif --fail-on critical
+- run: npx @AgentPostmortem/mcp-audit static ./mcp-manifest.json --sarif --output mcp-audit.sarif --fail-on critical
 - uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: mcp-audit.sarif
