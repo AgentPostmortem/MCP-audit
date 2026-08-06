@@ -3,11 +3,15 @@
 > Security scanner and linter for Model Context Protocol (MCP) servers. Like `npm audit` and `eslint`, but for the tools you hand your AI agents.
 
 [![CI](https://github.com/AgentPostmortem/mcp-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/AgentPostmortem/mcp-audit/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/mcp-audit.svg)](https://www.npmjs.com/package/mcp-audit)
+[![npm](https://img.shields.io/npm/v/@royalpinto007/mcp-audit.svg)](https://www.npmjs.com/package/@royalpinto007/mcp-audit)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
+**npm:** https://www.npmjs.com/package/@royalpinto007/mcp-audit
+
 ```bash
+npm install -g @royalpinto007/mcp-audit
+# or run it directly
 npx @royalpinto007/mcp-audit stdio "node my-mcp-server.js"
 ```
 
