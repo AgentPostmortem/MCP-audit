@@ -1,5 +1,9 @@
 import type { Finding, Rule } from "../types.js";
-import { containsAny, SECRET_PATH_PATTERNS } from "./helpers.js";
+import {
+  containsAny,
+  PROSE_SECRET_PATH_PATTERNS,
+  SECRET_PATH_PATTERNS,
+} from "./helpers.js";
 
 const PATH_ARG_NAMES = ["path", "file", "filename", "filepath", "dir", "directory", "location"];
 
@@ -12,22 +16,38 @@ export const resourceExposesSecrets: Rule = {
   id: "MCP030",
   title: "Resource exposes secrets or sensitive paths",
   description:
-    "Resources should never surface credential files, private keys, or sensitive system paths.",
+    "Resources should never surface credential files, private keys, or sensitive system paths. URI evidence is critical; metadata prose is reported at high only for unambiguous file patterns.",
   severity: "critical",
   category: "secrets",
   evaluate(target, ctx): Finding[] {
     const findings: Finding[] = [];
     for (const res of target.resources) {
-      const haystack = `${res.uri} ${res.name ?? ""} ${res.description ?? ""}`;
-      const hit = containsAny(haystack, SECRET_PATH_PATTERNS);
-      if (hit) {
+      const uriHit = containsAny(res.uri, SECRET_PATH_PATTERNS);
+      if (uriHit) {
         findings.push(
           ctx.report({
             title: "Resource surfaces sensitive material",
-            message: `Resource "${res.uri}" references "${hit}", which commonly holds secrets or system credentials.`,
+            message: `Resource "${res.uri}" references "${uriHit}", which commonly holds secrets or system credentials.`,
             remediation:
               "Remove the resource or restrict it to non-sensitive content. Never expose credential files or system paths over MCP.",
             location: res.uri,
+          }),
+        );
+      }
+
+      const proseHit = containsAny(
+        `${res.name ?? ""} ${res.description ?? ""}`,
+        PROSE_SECRET_PATH_PATTERNS,
+      );
+      if (proseHit) {
+        findings.push(
+          ctx.report({
+            title: "Resource metadata references sensitive material",
+            message: `Resource "${res.uri}" metadata references "${proseHit}", which is an unambiguous sensitive file pattern.`,
+            remediation:
+              "Review the resource name and description. Only a resource that actually exposes the file should be removed or restricted.",
+            location: res.uri,
+            severity: "high",
           }),
         );
       }

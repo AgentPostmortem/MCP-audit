@@ -102,6 +102,47 @@ describe("MCP040 http auth", () => {
   });
 });
 
+describe("MCP030 resource secrets", () => {
+  it("does not flag generic credentials wording in a description", () => {
+    const target = makeTarget({
+      resources: [
+        {
+          uri: "https://example.com/notes",
+          name: "Project notes",
+          description: "Project notes. Contains no credentials or secrets.",
+        },
+      ],
+    });
+    const findings = audit(target).findings.filter(
+      (f) => f.ruleId === "MCP030",
+    );
+    expect(findings).toHaveLength(0);
+  });
+
+  it("reports URI evidence as critical and prose evidence as high", () => {
+    const target = makeTarget({
+      resources: [
+        {
+          uri: "file:///home/me/.env",
+          name: "Environment backup",
+          description: "Local environment backup",
+        },
+        {
+          uri: "https://example.com/resource",
+          name: "server.pem",
+          description: "TLS certificate material",
+        },
+      ],
+    });
+    const findings = audit(target).findings.filter(
+      (f) => f.ruleId === "MCP030",
+    );
+    expect(findings).toHaveLength(2);
+    expect(findings.some((f) => f.severity === "critical")).toBe(true);
+    expect(findings.some((f) => f.severity === "high")).toBe(true);
+  });
+});
+
 describe("MCP060 tool name collision", () => {
   it("detects duplicate tool names", () => {
     const target = makeTarget({

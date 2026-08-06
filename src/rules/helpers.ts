@@ -83,6 +83,16 @@ export const SECRET_PATH_PATTERNS = [
   ".kube/config",
 ];
 
+/** File patterns that are still strong signals when they appear in prose. */
+export const PROSE_SECRET_PATH_PATTERNS = [
+  ".env",
+  "id_rsa",
+  "id_ed25519",
+  "/etc/passwd",
+  "/etc/shadow",
+  ".pem",
+];
+
 /** Case-insensitive "does haystack contain any needle". */
 export function containsAny(
   haystack: string | undefined,
