@@ -14,22 +14,33 @@ import { ALL_SEVERITIES } from "./types.js";
 
 const VERSION = "0.1.0";
 
+type CliFlag = string | boolean | string[];
+
 interface CliArgs {
   command?: string;
   positional: string[];
-  flags: Record<string, string | boolean>;
+  flags: Record<string, CliFlag>;
 }
 
-function parseArgs(argv: string[]): CliArgs {
+export function parseArgs(argv: string[]): CliArgs {
   const positional: string[] = [];
-  const flags: Record<string, string | boolean> = {};
+  const flags: Record<string, CliFlag> = {};
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith("--")) {
       const key = arg.slice(2);
       const next = argv[i + 1];
       if (next !== undefined && !next.startsWith("--")) {
-        flags[key] = next;
+        if (key === "header" && flags[key] !== undefined) {
+          const previous = flags[key];
+          flags[key] = Array.isArray(previous)
+            ? [...previous, next]
+            : typeof previous === "string"
+              ? [previous, next]
+              : next;
+        } else {
+          flags[key] = next;
+        }
         i++;
       } else {
         flags[key] = true;
@@ -73,7 +84,7 @@ EXIT CODES
 `;
 }
 
-function csv(value: string | boolean | undefined): string[] {
+function csv(value: CliFlag | undefined): string[] {
   if (typeof value !== "string") return [];
   return value
     .split(",")
@@ -83,7 +94,7 @@ function csv(value: string | boolean | undefined): string[] {
 
 function overlayFlags(
   base: McpAuditConfig,
-  flags: Record<string, string | boolean>,
+  flags: Record<string, CliFlag>,
 ): McpAuditConfig {
   const overlay: Record<string, unknown> = {};
   if (flags["fail-on"]) {
@@ -100,8 +111,8 @@ function overlayFlags(
   return normalizeConfig(overlay, base);
 }
 
-function collectHeaders(
-  flags: Record<string, string | boolean>,
+export function collectHeaders(
+  flags: Record<string, CliFlag>,
 ): Record<string, string> {
   const headers: Record<string, string> = {};
   const raw = flags["header"];
