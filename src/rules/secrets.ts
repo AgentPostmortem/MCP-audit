@@ -2,6 +2,14 @@ import type { Finding, Rule } from "../types.js";
 import { containsAny, SECRET_PATH_PATTERNS } from "./helpers.js";
 
 const PATH_ARG_NAMES = ["path", "file", "filename", "filepath", "dir", "directory", "location"];
+const UNAMBIGUOUS_SECRET_FILE_PATTERNS = [
+  ".env",
+  "id_rsa",
+  "id_ed25519",
+  ".pem",
+  "/etc/passwd",
+  "/etc/shadow",
+];
 
 /**
  * MCP030 - A resource points at secret material or a sensitive system path.
@@ -12,21 +20,36 @@ export const resourceExposesSecrets: Rule = {
   id: "MCP030",
   title: "Resource exposes secrets or sensitive paths",
   description:
-    "Resources should never surface credential files, private keys, or sensitive system paths.",
+    "Sensitive resource URIs are critical; unambiguous secret-file references in resource metadata are lower-confidence findings.",
   severity: "critical",
   category: "secrets",
   evaluate(target, ctx): Finding[] {
     const findings: Finding[] = [];
     for (const res of target.resources) {
-      const haystack = `${res.uri} ${res.name ?? ""} ${res.description ?? ""}`;
-      const hit = containsAny(haystack, SECRET_PATH_PATTERNS);
-      if (hit) {
+      const uriHit = containsAny(res.uri, SECRET_PATH_PATTERNS);
+      if (uriHit) {
         findings.push(
           ctx.report({
             title: "Resource surfaces sensitive material",
-            message: `Resource "${res.uri}" references "${hit}", which commonly holds secrets or system credentials.`,
+            message: `Resource "${res.uri}" references "${uriHit}", which commonly holds secrets or system credentials.`,
             remediation:
               "Remove the resource or restrict it to non-sensitive content. Never expose credential files or system paths over MCP.",
+            location: res.uri,
+          }),
+        );
+        continue;
+      }
+
+      const metadata = `${res.name ?? ""} ${res.description ?? ""}`;
+      const metadataHit = containsAny(metadata, UNAMBIGUOUS_SECRET_FILE_PATTERNS);
+      if (metadataHit) {
+        findings.push(
+          ctx.report({
+            severity: "medium",
+            title: "Resource metadata references sensitive material",
+            message: `Metadata for resource "${res.uri}" references "${metadataHit}", which may identify secret material.`,
+            remediation:
+              "Verify that the resource does not expose the referenced file, and remove or restrict it if it contains sensitive material.",
             location: res.uri,
           }),
         );
