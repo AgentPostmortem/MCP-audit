@@ -85,6 +85,54 @@ describe("MCP002 exec detection", () => {
   });
 });
 
+describe("MCP030 resource secret detection", () => {
+  function findingsFor(resources: AuditTarget["resources"]) {
+    return audit(makeTarget({ resources })).findings.filter((f) => f.ruleId === "MCP030");
+  }
+
+  it("does not treat generic credentials or secrets wording as critical evidence", () => {
+    const findings = findingsFor([
+      {
+        uri: "docs://project-notes",
+        name: "Credential safety notes",
+        description: "Project notes. Contains no credentials or secrets.",
+      },
+    ]);
+
+    expect(findings).toEqual([]);
+  });
+
+  it("reports an unambiguous metadata filename reference below critical severity", () => {
+    const findings = findingsFor([
+      {
+        uri: "docs://deployment-guide",
+        description: "Includes a copy of the production .env file.",
+      },
+    ]);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: "medium",
+      location: "docs://deployment-guide",
+    });
+  });
+
+  it("keeps sensitive resource URIs critical", () => {
+    const findings = findingsFor([
+      {
+        uri: "file:///home/app/.env",
+        description: "Configuration reference",
+      },
+    ]);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      severity: "critical",
+      location: "file:///home/app/.env",
+    });
+  });
+});
+
 describe("MCP040 http auth", () => {
   it("flags http transport without auth", () => {
     const target = makeTarget({
