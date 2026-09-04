@@ -1,5 +1,34 @@
-import { describe, expect, it } from "vitest";
-import { collectHeaders, parseArgs } from "../src/cli.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { collectHeaders, main, parseArgs } from "../src/cli.js";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("top-level information flags", () => {
+  it("prints only the version and succeeds without a command", async () => {
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    await expect(main(["--version"])).resolves.toBe(0);
+
+    expect(write).toHaveBeenCalledOnce();
+    expect(write).toHaveBeenCalledWith(expect.stringMatching(/^\d+\.\d+\.\d+\n$/));
+  });
+
+  it("keeps a bare invocation as a usage error", async () => {
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    await expect(main([])).resolves.toBe(2);
+    expect(write).toHaveBeenCalledWith(expect.stringContaining("USAGE"));
+  });
+
+  it("keeps explicit help successful", async () => {
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    await expect(main(["--help"])).resolves.toBe(0);
+    expect(write).toHaveBeenCalledWith(expect.stringContaining("USAGE"));
+  });
+});
 
 describe("HTTP headers", () => {
   it("collects every repeated --header flag", () => {

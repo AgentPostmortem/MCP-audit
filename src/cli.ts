@@ -169,13 +169,13 @@ export async function main(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
   const { command, flags } = args;
 
-  if (flags["help"] || command === "help" || command === undefined) {
-    process.stdout.write(usage());
-    return command === undefined && !flags["help"] ? 2 : 0;
-  }
   if (flags["version"]) {
     process.stdout.write(`${VERSION}\n`);
     return 0;
+  }
+  if (flags["help"] || command === "help" || command === undefined) {
+    process.stdout.write(usage());
+    return command === undefined && !flags["help"] ? 2 : 0;
   }
   if (command === "rules") {
     printRules();
