@@ -58,6 +58,18 @@ describe("terminal reporter", () => {
     expect(text).toContain("MCP002");
     expect(text).toMatch(/\d+ findings/);
   });
+  it("disables ANSI colors without mutating the environment", () => {
+    const previous = process.env.NO_COLOR;
+    try {
+      delete process.env.NO_COLOR;
+      const text = renderTerminal(result, { color: false });
+      expect(text).not.toMatch(/\u001b\[/);
+      expect(process.env.NO_COLOR).toBeUndefined();
+    } finally {
+      if (previous === undefined) delete process.env.NO_COLOR;
+      else process.env.NO_COLOR = previous;
+    }
+  });
 
   it("reports a clean audit", () => {
     const clean = runAudit(
