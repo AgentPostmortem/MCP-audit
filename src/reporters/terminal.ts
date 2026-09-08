@@ -3,14 +3,6 @@ import type { AuditResult } from "../engine/engine.js";
 import type { Severity } from "../types.js";
 import { ALL_SEVERITIES } from "../types.js";
 
-const SEV_LABEL: Record<Severity, (s: string) => string> = {
-  critical: (s) => pc.bgRed(pc.white(pc.bold(` ${s} `))),
-  high: (s) => pc.red(pc.bold(s)),
-  medium: (s) => pc.yellow(pc.bold(s)),
-  low: (s) => pc.cyan(s),
-  info: (s) => pc.gray(s),
-};
-
 const SEV_ICON: Record<Severity, string> = {
   critical: "✖",
   high: "✖",
@@ -19,45 +11,45 @@ const SEV_ICON: Record<Severity, string> = {
   info: "○",
 };
 
-function severityTag(sev: Severity): string {
-  return SEV_LABEL[sev](sev.toUpperCase());
-}
-
 /** Render a full audit result as colored, grouped terminal output. */
 export function renderTerminal(
   result: AuditResult,
   options: { color?: boolean } = {},
 ): string {
-  const useColor = options.color ?? true;
-  if (!useColor) {
-    // picocolors respects NO_COLOR, but honor an explicit override too.
-    process.env.NO_COLOR = "1";
-  }
+  const useColor = options.color ?? pc.isColorSupported;
+  const colors = pc.createColors(useColor);
+  const severityLabel: Record<Severity, (s: string) => string> = {
+    critical: (s) => colors.bgRed(colors.white(colors.bold(` ${s} `))),
+    high: (s) => colors.red(colors.bold(s)),
+    medium: (s) => colors.yellow(colors.bold(s)),
+    low: (s) => colors.cyan(s),
+    info: (s) => colors.gray(s),
+  };
   const lines: string[] = [];
   const { target, findings, counts } = result;
 
   lines.push(
-    pc.bold(`mcp-audit`) +
-      pc.gray(` — ${target.transport} target `) +
-      pc.underline(target.source),
+    colors.bold(`mcp-audit`) +
+      colors.gray(` — ${target.transport} target `) +
+      colors.underline(target.source),
   );
   const si = target.serverInfo;
   if (si.name || si.version) {
     lines.push(
-      pc.gray(
+      colors.gray(
         `server: ${si.name ?? "(unnamed)"} ${si.version ? `v${si.version}` : ""}`.trim(),
       ),
     );
   }
   lines.push(
-    pc.gray(
+    colors.gray(
       `surface: ${target.tools.length} tools, ${target.resources.length} resources, ${target.prompts.length} prompts`,
     ),
   );
   lines.push("");
 
   if (findings.length === 0) {
-    lines.push(pc.green(pc.bold("✔ No findings. Clean audit.")));
+    lines.push(colors.green(colors.bold("✔ No findings. Clean audit.")));
     lines.push("");
     return lines.join("\n");
   }
@@ -66,30 +58,41 @@ export function renderTerminal(
   for (const sev of [...ALL_SEVERITIES].reverse()) {
     const group = findings.filter((f) => f.severity === sev);
     if (group.length === 0) continue;
-    lines.push(severityTag(sev) + pc.gray(`  (${group.length})`));
+    lines.push(severityLabel[sev](sev.toUpperCase()) + colors.gray(`  (${group.length})`));
     for (const f of group) {
       lines.push(
-        `  ${SEV_ICON[sev]} ${pc.bold(f.ruleId)} ${f.title}` +
-          (f.location ? pc.gray(`  @ ${f.location}`) : ""),
+        `  ${SEV_ICON[sev]} ${colors.bold(f.ruleId)} ${f.title}` +
+          (f.location ? colors.gray(`  @ ${f.location}`) : ""),
       );
       lines.push(`      ${f.message}`);
-      lines.push(pc.gray(`      fix: ${f.remediation}`));
+      lines.push(colors.gray(`      fix: ${f.remediation}`));
     }
     lines.push("");
   }
 
-  lines.push(renderSummary(counts));
+  lines.push(renderSummary(counts, { color: useColor }));
   lines.push("");
   return lines.join("\n");
 }
 
 /** One-line summary of severity counts. */
-export function renderSummary(counts: Record<Severity, number>): string {
+export function renderSummary(
+  counts: Record<Severity, number>,
+  options: { color?: boolean } = {},
+): string {
+  const colors = pc.createColors(options.color ?? pc.isColorSupported);
+  const severityLabel: Record<Severity, (s: string) => string> = {
+    critical: (s) => colors.bgRed(colors.white(colors.bold(` ${s} `))),
+    high: (s) => colors.red(colors.bold(s)),
+    medium: (s) => colors.yellow(colors.bold(s)),
+    low: (s) => colors.cyan(s),
+    info: (s) => colors.gray(s),
+  };
   const total = ALL_SEVERITIES.reduce((n, s) => n + counts[s], 0);
   const parts = [...ALL_SEVERITIES]
     .reverse()
     .filter((s) => counts[s] > 0)
-    .map((s) => SEV_LABEL[s](`${counts[s]} ${s}`));
-  return pc.bold(`${total} finding${total === 1 ? "" : "s"}`) +
-    (parts.length ? "  " + parts.join(pc.gray(", ")) : "");
+    .map((s) => severityLabel[s](`${counts[s]} ${s}`));
+  return colors.bold(`${total} finding${total === 1 ? "" : "s"}`) +
+    (parts.length ? "  " + parts.join(colors.gray(", ")) : "");
 }
