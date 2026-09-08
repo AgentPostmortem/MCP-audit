@@ -98,11 +98,16 @@ export function normalizeConfig(
 export async function loadConfig(options: {
   explicitPath?: string;
   cwd?: string;
-}): Promise<{ config: McpAuditConfig; path?: string }> {
+} = {}): Promise<{ config: McpAuditConfig; path?: string }> {
   const path =
     options.explicitPath ?? findConfigFile(options.cwd ?? process.cwd());
   if (!path) return { config: DEFAULT_CONFIG };
   const raw = await readFile(resolve(path), "utf8");
-  const parsed = JSON.parse(raw);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`Failed to parse config file ${path}: ${(err as Error).message}`);
+  }
   return { config: normalizeConfig(parsed), path };
 }
