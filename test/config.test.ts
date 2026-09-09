@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { normalizeConfig, DEFAULT_CONFIG } from "../src/config.js";
+import { normalizeConfig, loadConfig, DEFAULT_CONFIG } from "../src/config.js";
+import { writeFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 describe("normalizeConfig", () => {
   it("returns defaults for an empty object", () => {
@@ -38,5 +41,20 @@ describe("normalizeConfig", () => {
     const overlaid = normalizeConfig({ disabledRules: ["B"] }, base);
     expect(overlaid.disabledRules).toEqual(["B"]);
     expect(overlaid.failOn).toBe("medium");
+  });
+});
+
+describe("loadConfig", () => {
+  it("wraps JSON syntax errors with the file path", async () => {
+    const tmpFile = join(tmpdir(), `mcp-audit-test-${Math.random()}.json`);
+    await writeFile(tmpFile, "{ invalid json ", "utf8");
+    try {
+      await loadConfig({ explicitPath: tmpFile });
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect((err as Error).message).toContain(tmpFile);
+    } finally {
+      await rm(tmpFile, { force: true });
+    }
   });
 });
