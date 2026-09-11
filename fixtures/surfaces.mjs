@@ -61,6 +61,19 @@ export const insecureSurface = {
         additionalProperties: false,
       },
     },
+    {
+      // MCP014 unbounded numeric (limit integer with no min/max/enum)
+      name: "list_items",
+      description: "List items with a pagination limit.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          limit: { type: "integer" },
+        },
+        required: ["limit"],
+        additionalProperties: false,
+      },
+    },
   ],
   resources: [
     {
