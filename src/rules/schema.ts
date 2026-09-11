@@ -150,9 +150,55 @@ export const missingRequiredList: Rule = {
   },
 };
 
+/**
+ * MCP014 - Unbounded numeric argument with no minimum/maximum/range.
+ * Integer or number args with no minimum, maximum, or enum let the model
+ * request extreme values (CWE-789 resource exhaustion via the tool).
+ */
+export const unboundedNumericArg: Rule = {
+  id: "MCP014",
+  title: "Unbounded numeric argument",
+  description:
+    "Numeric arguments should constrain their range with minimum, maximum, or enum.",
+  severity: "low",
+  category: "schema",
+  evaluate(target, ctx): Finding[] {
+    const findings: Finding[] = [];
+    for (const tool of target.tools) {
+      const props = tool.inputSchema?.properties ?? {};
+      for (const [name, schema] of Object.entries(props)) {
+        const type = schema.type;
+        const isNumeric =
+          type === "number" ||
+          type === "integer" ||
+          (Array.isArray(type) &&
+            (type.includes("number") || type.includes("integer")));
+        if (!isNumeric) continue;
+        const bounded =
+          schema.enum !== undefined ||
+          schema["minimum"] !== undefined ||
+          schema["maximum"] !== undefined;
+        if (!bounded) {
+          findings.push(
+            ctx.report({
+              title: "Numeric argument has no range constraints",
+              message: `Argument "${name}" of tool "${tool.name}" is an unbounded numeric (${Array.isArray(type) ? type.join("|") : type}) with no minimum, maximum, or enum.`,
+              remediation:
+                "Constrain the argument with minimum, maximum, or enum appropriate to its purpose.",
+              location: `${tool.name}.${name}`,
+            }),
+          );
+        }
+      }
+    }
+    return findings;
+  },
+};
+
 export const schemaRules: Rule[] = [
   missingInputSchema,
   unboundedAdditionalProperties,
   unconstrainedStringArg,
   missingRequiredList,
+  unboundedNumericArg,
 ];
