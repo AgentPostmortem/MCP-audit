@@ -43,6 +43,7 @@ describe("rules against the insecure surface", () => {
     "MCP010", // no schema
     "MCP011", // additionalProperties
     "MCP012", // unconstrained string
+    "MCP014", // unbounded numeric
     "MCP020", // injection phrase
     "MCP021", // overly broad
     "MCP030", // .env resource
@@ -175,6 +176,77 @@ describe("MCP061 capability sprawl", () => {
       },
     }));
     expect(idsFor(makeTarget({ tools })).has("MCP061")).toBe(true);
+  });
+});
+
+describe("MCP014 unbounded numeric arg", () => {
+  function findingsFor(tools: AuditTarget["tools"]) {
+    return audit(makeTarget({ tools })).findings.filter((f) => f.ruleId === "MCP014");
+  }
+
+  it("flags an integer arg with no minimum or maximum", () => {
+    const findings = findingsFor([
+      {
+        name: "list_items",
+        description: "list",
+        inputSchema: {
+          type: "object",
+          properties: { limit: { type: "integer" } },
+          required: ["limit"],
+          additionalProperties: false,
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].severity).toBe("low");
+    expect(findings[0].location).toBe("list_items.limit");
+  });
+
+  it("flags a number arg with no range", () => {
+    const findings = findingsFor([
+      {
+        name: "set_temp",
+        description: "set",
+        inputSchema: {
+          type: "object",
+          properties: { temperature: { type: "number" } },
+          additionalProperties: false,
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].location).toBe("set_temp.temperature");
+  });
+
+  it("does not flag an integer with minimum and maximum", () => {
+    const findings = findingsFor([
+      {
+        name: "list_items",
+        description: "list",
+        inputSchema: {
+          type: "object",
+          properties: { limit: { type: "integer", minimum: 1, maximum: 100 } },
+          required: ["limit"],
+          additionalProperties: false,
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(0);
+  });
+
+  it("does not flag an integer with an enum", () => {
+    const findings = findingsFor([
+      {
+        name: "set_page",
+        description: "page",
+        inputSchema: {
+          type: "object",
+          properties: { page: { type: "integer", enum: [1, 2, 3] } },
+          additionalProperties: false,
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(0);
   });
 });
 
