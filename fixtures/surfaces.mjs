@@ -74,6 +74,22 @@ export const insecureSurface = {
         additionalProperties: false,
       },
     },
+    {
+      // MCP032 hardcoded secret in default/examples
+      name: "call_external_api",
+      description: "Call external API service.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          api_key: {
+            type: "string",
+            default: "sk-live-mock-secret-key-1234567890",
+          },
+        },
+        required: ["api_key"],
+        additionalProperties: false,
+      },
+    },
   ],
   resources: [
     {

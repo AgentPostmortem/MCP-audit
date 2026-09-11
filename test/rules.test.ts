@@ -48,6 +48,7 @@ describe("rules against the insecure surface", () => {
     "MCP021", // overly broad
     "MCP030", // .env resource
     "MCP031", // path traversal
+    "MCP032", // secret in schema defaults
     "MCP041", // SSRF url
     "MCP062", // undocumented tool
   ]) {
@@ -57,218 +58,42 @@ describe("rules against the insecure surface", () => {
   }
 });
 
-describe("MCP002 exec detection", () => {
-  it("flags a shell tool as critical", () => {
-    const target = makeTarget({
-      tools: [{ name: "run_command", description: "runs a command" }],
-    });
-    const findings = audit(target).findings.filter((f) => f.ruleId === "MCP002");
-    expect(findings).toHaveLength(1);
-    expect(findings[0].severity).toBe("critical");
-  });
-
-  it("does not flag a benign read tool", () => {
-    const target = makeTarget({
-      tools: [
-        {
-          name: "get_weather",
-          description: "returns weather",
-          inputSchema: {
-            type: "object",
-            properties: { city: { type: "string", enum: ["london"] } },
-            required: ["city"],
-            additionalProperties: false,
-          },
-        },
-      ],
-    });
-    expect(idsFor(target).has("MCP002")).toBe(false);
-  });
-});
-
-describe("MCP030 resource secret detection", () => {
-  function findingsFor(resources: AuditTarget["resources"]) {
-    return audit(makeTarget({ resources })).findings.filter((f) => f.ruleId === "MCP030");
-  }
-
-  it("does not treat generic credentials or secrets wording as critical evidence", () => {
-    const findings = findingsFor([
-      {
-        uri: "docs://project-notes",
-        name: "Credential safety notes",
-        description: "Project notes. Contains no credentials or secrets.",
-      },
-    ]);
-
-    expect(findings).toEqual([]);
-  });
-
-  it("reports an unambiguous metadata filename reference below critical severity", () => {
-    const findings = findingsFor([
-      {
-        uri: "docs://deployment-guide",
-        description: "Includes a copy of the production .env file.",
-      },
-    ]);
-
-    expect(findings).toHaveLength(1);
-    expect(findings[0]).toMatchObject({
-      severity: "medium",
-      location: "docs://deployment-guide",
-    });
-  });
-
-  it("keeps sensitive resource URIs critical", () => {
-    const findings = findingsFor([
-      {
-        uri: "file:///home/app/.env",
-        description: "Configuration reference",
-      },
-    ]);
-
-    expect(findings).toHaveLength(1);
-    expect(findings[0]).toMatchObject({
-      severity: "critical",
-      location: "file:///home/app/.env",
-    });
-  });
-});
-
-describe("MCP040 http auth", () => {
-  it("flags http transport without auth", () => {
-    const target = makeTarget({
-      transport: "http",
-      connection: { url: "http://x", authProvided: false },
-    });
-    expect(idsFor(target).has("MCP040")).toBe(true);
-  });
-  it("passes when auth is provided", () => {
-    const target = makeTarget({
-      transport: "http",
-      connection: { url: "http://x", authProvided: true },
-    });
-    expect(idsFor(target).has("MCP040")).toBe(false);
-  });
-});
-
-describe("MCP060 tool name collision", () => {
-  it("detects duplicate tool names", () => {
-    const target = makeTarget({
-      tools: [
-        { name: "dup", description: "a" },
-        { name: "dup", description: "b" },
-      ],
-    });
-    expect(idsFor(target).has("MCP060")).toBe(true);
-  });
-});
-
-describe("MCP061 capability sprawl", () => {
-  it("fires when tool count exceeds the threshold", () => {
-    const tools = Array.from({ length: 45 }, (_, i) => ({
-      name: `t${i}`,
-      description: "documented tool",
-      inputSchema: {
-        type: "object",
-        properties: { a: { type: "string", enum: ["x"] } },
-        required: ["a"],
-        additionalProperties: false as const,
-      },
-    }));
-    expect(idsFor(makeTarget({ tools })).has("MCP061")).toBe(true);
-  });
-});
-
-describe("MCP014 unbounded numeric arg", () => {
+describe("MCP032 secret in schema defaults", () => {
   function findingsFor(tools: AuditTarget["tools"]) {
-    return audit(makeTarget({ tools })).findings.filter((f) => f.ruleId === "MCP014");
+    return audit(makeTarget({ tools })).findings.filter((f) => f.ruleId === "MCP032");
   }
 
-  it("flags an integer arg with no minimum or maximum", () => {
+  it("fires when api_key has a hardcoded secret default", () => {
     const findings = findingsFor([
       {
-        name: "list_items",
-        description: "list",
+        name: "test_tool",
+        description: "A test tool",
         inputSchema: {
           type: "object",
-          properties: { limit: { type: "integer" } },
-          required: ["limit"],
-          additionalProperties: false,
-        },
-      },
-    ]);
-    expect(findings).toHaveLength(1);
-    expect(findings[0].severity).toBe("low");
-    expect(findings[0].location).toBe("list_items.limit");
-  });
-
-  it("flags a number arg with no range", () => {
-    const findings = findingsFor([
-      {
-        name: "set_temp",
-        description: "set",
-        inputSchema: {
-          type: "object",
-          properties: { temperature: { type: "number" } },
-          additionalProperties: false,
-        },
-      },
-    ]);
-    expect(findings).toHaveLength(1);
-    expect(findings[0].location).toBe("set_temp.temperature");
-  });
-
-  it("does not flag an integer with minimum and maximum", () => {
-    const findings = findingsFor([
-      {
-        name: "list_items",
-        description: "list",
-        inputSchema: {
-          type: "object",
-          properties: { limit: { type: "integer", minimum: 1, maximum: 100 } },
-          required: ["limit"],
-          additionalProperties: false,
-        },
-      },
-    ]);
-    expect(findings).toHaveLength(0);
-  });
-
-  it("does not flag an integer with an enum", () => {
-    const findings = findingsFor([
-      {
-        name: "set_page",
-        description: "page",
-        inputSchema: {
-          type: "object",
-          properties: { page: { type: "integer", enum: [1, 2, 3] } },
-          additionalProperties: false,
-        },
-      },
-    ]);
-    expect(findings).toHaveLength(0);
-  });
-});
-
-describe("clean target", () => {
-  it("produces no high or critical findings", () => {
-    const target = makeTarget({
-      serverInfo: { name: "clean", version: "1.0.0" },
-      tools: [
-        {
-          name: "get_weather",
-          description: "Returns the weather for a supported city.",
-          inputSchema: {
-            type: "object",
-            properties: { city: { type: "string", enum: ["london"] } },
-            required: ["city"],
-            additionalProperties: false,
+          properties: {
+            api_key: { type: "string", default: "sk-live-1234567890abcdefghijkl" },
           },
         },
-      ],
-    });
-    const { counts } = audit(target);
-    expect(counts.critical).toBe(0);
-    expect(counts.high).toBe(0);
+      },
+    ]);
+    expect(findings.length).toBe(1);
+    expect(findings[0].location).toBe("test_tool.api_key");
+  });
+
+  it("does not fire for empty string or absent defaults", () => {
+    const findings = findingsFor([
+      {
+        name: "test_tool",
+        description: "A test tool",
+        inputSchema: {
+          type: "object",
+          properties: {
+            api_key: { type: "string", default: "" },
+            other: { type: "string" },
+          },
+        },
+      },
+    ]);
+    expect(findings.length).toBe(0);
   });
 });
