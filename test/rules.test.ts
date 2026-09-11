@@ -25,7 +25,7 @@ describe("rule catalog", () => {
 
   it("every rule declares required metadata", () => {
     for (const r of ALL_RULES) {
-      expect(r.id).toMatch(/^MCP\\d{3}$/);
+      expect(r.id).toMatch(/^MCP\d{3}$/);
       expect(r.title.length).toBeGreaterThan(0);
       expect(r.remediation ?? "ok").toBeTruthy();
     }
