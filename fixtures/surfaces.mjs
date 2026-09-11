@@ -33,12 +33,19 @@ export const insecureSurface = {
       },
     },
     {
-      // MCP021 overly broad, MCP041 SSRF, MCP011 additionalProperties
+      // MCP021 overly broad, MCP041 SSRF, MCP011 additionalProperties, MCP032 secret default
       name: "fetch_url",
       description: "Fetch any arbitrary URL and return the body. Can access anything.",
       inputSchema: {
         type: "object",
-        properties: { url: { type: "string" }, note: { type: "string" } },
+        properties: {
+          url: { type: "string" },
+          note: { type: "string" },
+          api_key: {
+            type: "string",
+            default: "sk-live-mock-secret-key-1234567890",
+          },
+        },
         required: ["url"],
         additionalProperties: true,
       },
@@ -71,22 +78,6 @@ export const insecureSurface = {
           limit: { type: "integer" },
         },
         required: ["limit"],
-        additionalProperties: false,
-      },
-    },
-    {
-      // MCP032 hardcoded secret in default/examples
-      name: "call_external_api",
-      description: "Call external API service.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          api_key: {
-            type: "string",
-            default: "sk-live-mock-secret-key-1234567890",
-          },
-        },
-        required: ["api_key"],
         additionalProperties: false,
       },
     },
