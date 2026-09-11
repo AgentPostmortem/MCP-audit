@@ -11,6 +11,38 @@ const UNAMBIGUOUS_SECRET_FILE_PATTERNS = [
   "/etc/shadow",
 ];
 
+const SECRET_VALUE_PATTERNS = [
+  /^sk-[a-zA-Z0-9_-]{10,}/,
+  /^AKIA[0-9A-Z]{16}/,
+  /^xox[baprs]-[0-9a-zA-Z]{10,}/,
+  /^ghp_[0-9a-zA-Z]{36}/,
+  /^github_pat_[0-9a-zA-Z_]{20,}/,
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
+];
+
+const SENSITIVE_PARAM_NAMES = [
+  "password",
+  "secret",
+  "token",
+  "api_key",
+  "apikey",
+  "auth",
+  "private_key",
+];
+
+function isSecretValue(val: unknown, paramName: string): boolean {
+  if (typeof val !== "string" || val.trim() === "") return false;
+  const str = val.trim();
+  if (SECRET_VALUE_PATTERNS.some((p) => p.test(str))) return true;
+  const isSensitiveName = SENSITIVE_PARAM_NAMES.some((n) =>
+    paramName.toLowerCase().includes(n),
+  );
+  if (isSensitiveName && str.length >= 16) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * MCP030 - A resource points at secret material or a sensitive system path.
  * Exposing `.env`, private keys, or `/etc/*` as MCP resources leaks credentials
@@ -98,4 +130,49 @@ export const pathTraversalArg: Rule = {
   },
 };
 
-export const secretRules: Rule[] = [resourceExposesSecrets, pathTraversalArg];
+/**
+ * MCP032 - A tool input schema exposes hardcoded secrets in default, const, or examples.
+ */
+export const secretInSchemaDefault: Rule = {
+  id: "MCP032",
+  title: "Input schema contains secret-like default or example value",
+  description:
+    "Hardcoded credentials in tool input schema defaults or examples expose live secrets to every client that lists tools.",
+  severity: "critical",
+  category: "secrets",
+  evaluate(target, ctx): Finding[] {
+    const findings: Finding[] = [];
+    for (const tool of target.tools) {
+      const props = tool.inputSchema?.properties ?? {};
+      for (const [name, schema] of Object.entries(props)) {
+        const candidateValues: unknown[] = [
+          schema["default"],
+          schema["const"],
+          ...(Array.isArray(schema["examples"]) ? schema["examples"] : []),
+        ];
+
+        for (const val of candidateValues) {
+          if (isSecretValue(val, name)) {
+            findings.push(
+              ctx.report({
+                title: "Secret-like value hardcoded in input schema",
+                message: `Property "${name}" of tool "${tool.name}" defines a default or example value that appears to contain sensitive secret material.`,
+                remediation:
+                  "Never supply real credentials as defaults or examples in tool schemas. Require users or runtime configuration to supply credentials dynamically.",
+                location: `${tool.name}.${name}`,
+              }),
+            );
+            break;
+          }
+        }
+      }
+    }
+    return findings;
+  },
+};
+
+export const secretRules: Rule[] = [
+  resourceExposesSecrets,
+  pathTraversalArg,
+  secretInSchemaDefault,
+];

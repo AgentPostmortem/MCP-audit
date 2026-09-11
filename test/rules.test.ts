@@ -48,6 +48,7 @@ describe("rules against the insecure surface", () => {
     "MCP021", // overly broad
     "MCP030", // .env resource
     "MCP031", // path traversal
+    "MCP032", // secret in schema defaults
     "MCP041", // SSRF url
     "MCP062", // undocumented tool
   ]) {
@@ -131,6 +132,108 @@ describe("MCP030 resource secret detection", () => {
       severity: "critical",
       location: "file:///home/app/.env",
     });
+  });
+});
+
+describe("MCP032 secret in schema defaults", () => {
+  function findingsFor(tools: AuditTarget["tools"]) {
+    return audit(makeTarget({ tools })).findings.filter((f) => f.ruleId === "MCP032");
+  }
+
+  it("fires when a property has a hardcoded secret default", () => {
+    const findings = findingsFor([
+      {
+        name: "test_tool",
+        description: "A test tool",
+        inputSchema: {
+          type: "object",
+          properties: {
+            api_key: { type: "string", default: "sk-live-1234567890abcdefghijkl" },
+          },
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].location).toBe("test_tool.api_key");
+    expect(findings[0].severity).toBe("critical");
+  });
+
+  it("fires when a property uses const with secret material", () => {
+    const findings = findingsFor([
+      {
+        name: "test_tool",
+        description: "A test tool",
+        inputSchema: {
+          type: "object",
+          properties: {
+            auth_token: {
+              type: "string",
+              const: "ghp_123456789012345678901234567890123456",
+            },
+          },
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].location).toBe("test_tool.auth_token");
+  });
+
+  it("does not fire for benign const values", () => {
+    const findings = findingsFor([
+      {
+        name: "test_tool",
+        description: "A test tool",
+        inputSchema: {
+          type: "object",
+          properties: {
+            mode: { type: "string", const: "read_only" },
+          },
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(0);
+  });
+
+  it("fires when examples array contains secret material", () => {
+    const findings = findingsFor([
+      {
+        name: "test_tool",
+        description: "A test tool",
+        inputSchema: {
+          type: "object",
+          properties: {
+            secret_key: {
+              type: "string",
+              examples: ["placeholder", "AKIAIOSFODNN7EXAMPLE"],
+            },
+          },
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].location).toBe("test_tool.secret_key");
+  });
+
+  it("does not fire for benign examples or non-secret defaults", () => {
+    const findings = findingsFor([
+      {
+        name: "test_tool",
+        description: "A test tool",
+        inputSchema: {
+          type: "object",
+          properties: {
+            api_key: { type: "string", default: "" },
+            hostname: {
+              type: "string",
+              default: "localhost",
+              examples: ["example.com", "test.local"],
+            },
+            other: { type: "string" },
+          },
+        },
+      },
+    ]);
+    expect(findings).toHaveLength(0);
   });
 });
 
