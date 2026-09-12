@@ -52,6 +52,10 @@ export function normalize(parsed: unknown, source: string): AuditTarget {
     ? { tools: parsed as ToolSpec[] }
     : ((parsed as ManifestFile) ?? {});
 
+  if (manifest.tools != null && !Array.isArray(manifest.tools)) {
+    throw new Error(`Invalid manifest ${source}: tools must be an array.`);
+  }
+
   const serverInfo = manifest.serverInfo ?? manifest.server ?? {};
   const declaredHttp = manifest.transport === "http";
 
