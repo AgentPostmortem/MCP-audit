@@ -109,7 +109,7 @@ function csv(value: CliFlag | undefined): string[] {
     .filter(Boolean);
 }
 
-function overlayFlags(
+export function overlayFlags(
   base: McpAuditConfig,
   flags: Record<string, CliFlag>,
 ): McpAuditConfig {
@@ -124,7 +124,10 @@ function overlayFlags(
     overlay.failOn = fo;
   }
   if (flags["disable"]) overlay.disabledRules = csv(flags["disable"]);
-  if (flags["only"]) overlay.enabledRules = csv(flags["only"]);
+  if (flags["only"] !== undefined) {
+    overlay.enabledRules = csv(flags["only"]);
+    overlay.enforceEnabledRules = true;
+  }
   return normalizeConfig(overlay, base);
 }
 
