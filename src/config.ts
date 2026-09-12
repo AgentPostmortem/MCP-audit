@@ -32,6 +32,7 @@ export const DEFAULT_CONFIG: McpAuditConfig = {
 const KNOWN_CONFIG_KEYS = new Set<string>([
   "disabledRules",
   "enabledRules",
+  "enforceEnabledRules",
   "severityOverrides",
   "failOn",
   "ignore",
