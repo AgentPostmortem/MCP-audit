@@ -36,6 +36,22 @@ describe("loadManifest", () => {
     expect(target.transport).toBe("static");
   });
 
+  it.each(["MCP001", { name: "read_file" }, 42, true])(
+    "rejects a non-array tools field: %j",
+    (tools) => {
+      expect(() => normalize({ tools }, "invalid-tools.json")).toThrow(
+        "Invalid manifest invalid-tools.json: tools must be an array.",
+      );
+    },
+  );
+
+  it.each([{}, { tools: null }, { tools: [] }])(
+    "keeps an absent or empty tool list valid: %j",
+    (manifest) => {
+      expect(normalize(manifest, "empty.json").tools).toEqual([]);
+    },
+  );
+
   it("rejects a missing manifest file", async () => {
     await expect(loadManifest(resolve(root, "does-not-exist.json"))).rejects.toBeTruthy();
   });
