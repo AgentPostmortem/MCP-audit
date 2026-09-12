@@ -33,6 +33,13 @@ describe("top-level information flags", () => {
   });
 });
 
+describe("parseArgs", () => {
+  it("parses --flag=value as a string flag value", () => {
+    const { flags } = parseArgs(["audit", "--fail-on=high"]);
+    expect(flags["fail-on"]).toBe("high");
+  });
+});
+
 describe("HTTP headers", () => {
   it("collects every repeated --header flag", () => {
     const { flags } = parseArgs([
@@ -61,11 +68,25 @@ describe("HTTP headers", () => {
     expect(collectHeaders(flags)).toEqual({ Authorization: "Bearer a:b" });
   });
 
+
   it("treats --only \"\" as an empty allowlist (zero rules run)", () => {
     const { flags } = parseArgs(["static", "manifest.json", "--only", ""]);
     const config = overlayFlags(DEFAULT_CONFIG, flags);
     const result = runAudit(makeTarget(), config);
     expect(result.rulesRun).toEqual([]);
+});
+
+it("rejects a header value without a colon", () => {
+    const { flags } = parseArgs([
+      "http",
+      "https://example.com/mcp",
+      "--header",
+      "Authorization",
+    ]);
+
+    expect(() => collectHeaders(flags)).toThrow(
+      /header.*colon/i,
+    );
   });
 
   it("keeps last-wins behavior for repeated non-header flags", () => {

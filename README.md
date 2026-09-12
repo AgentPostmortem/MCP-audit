@@ -80,7 +80,7 @@ The process exits `1` when any finding reaches the `--fail-on` threshold (defaul
 
 ## Rule catalog
 
-18 built-in rules, each with a stable id, severity, and remediation. Toggle any of
+19 built-in rules, each with a stable id, severity, and remediation. Toggle any of
 them via config.
 
 | Rule | Severity | Category | Description |
@@ -88,12 +88,14 @@ them via config.
 | `MCP001` | high | permissions | Destructive tool lacks scoping or confirmation |
 | `MCP002` | critical | permissions | Tool exposes arbitrary command execution |
 | `MCP003` | medium | permissions | Mutating tool has an unscoped input surface |
+| `MCP004` | high | permissions | Mutating tool advertises readOnlyHint |
 | `MCP010` | medium | schema | Tool is missing an input schema |
 | `MCP011` | low | schema | Schema allows unbounded additional properties |
 | `MCP012` | low | schema | Unconstrained string argument |
 | `MCP013` | info | schema | Object schema has no required properties |
 | `MCP020` | high | injection | Description contains probable prompt-injection text |
 | `MCP021` | medium | injection | Tool advertises overly broad capability |
+| `MCP022` | medium | injection | Description directs cross-tool chaining |
 | `MCP030` | critical | secrets | Resource exposes secrets or sensitive paths |
 | `MCP031` | high | secrets | Path argument is vulnerable to traversal |
 | `MCP040` | high | transport | HTTP transport has no authentication |
@@ -126,7 +128,7 @@ mcp-audit discovers the nearest one walking up from the working directory.
 | `disabledRules` | Rule ids to skip entirely. |
 | `enabledRules` | If set, run **only** these rule ids. |
 | `severityOverrides` | Remap a rule's severity, e.g. downgrade a noisy check. |
-| `ignore` | Substrings matched against a finding's location to suppress it. |
+| `ignore` | Substrings matched against a finding's location or rule id to suppress it. |
 
 Severities, lowest to highest: `info`, `low`, `medium`, `high`, `critical`.
 
