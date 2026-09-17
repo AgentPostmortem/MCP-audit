@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from "node:module";
 import { runAudit, shouldFail } from "./audit.js";
 import { loadConfig, normalizeConfig } from "./config.js";
 import type { McpAuditConfig } from "./config.js";
@@ -12,7 +13,14 @@ import { ALL_RULES } from "./rules/index.js";
 import type { AuditTarget, Severity } from "./types.js";
 import { ALL_SEVERITIES } from "./types.js";
 
-const VERSION = "0.1.0";
+const require = createRequire(import.meta.url);
+const VERSION: string = (() => {
+  try {
+    return require("../package.json").version;
+  } catch {
+    return "0.0.0";
+  }
+})();
 
 type CliFlag = string | boolean | string[];
 

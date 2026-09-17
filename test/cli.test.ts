@@ -3,6 +3,7 @@ import { collectHeaders, main, overlayFlags, parseArgs } from "../src/cli.js";
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { runAudit } from "../src/audit.js";
 import { makeTarget } from "./helpers.js";
+import packageJson from "../package.json";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -16,6 +17,14 @@ describe("top-level information flags", () => {
 
     expect(write).toHaveBeenCalledOnce();
     expect(write).toHaveBeenCalledWith(expect.stringMatching(/^\d+\.\d+\.\d+\n$/));
+  });
+
+  it("reports the version from package.json, not a hardcoded value", async () => {
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    await expect(main(["--version"])).resolves.toBe(0);
+
+    expect(write).toHaveBeenCalledWith(`${packageJson.version}\n`);
   });
 
   it("keeps a bare invocation as a usage error", async () => {
