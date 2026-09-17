@@ -8,6 +8,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Report the real `package.json` version from `--version` instead of a hardcoded
+  value that had drifted.
+
 - Reject non-array `tools` fields in static manifests before auditing, with an
   error identifying the source file.
 
