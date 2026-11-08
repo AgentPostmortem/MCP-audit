@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 import { runAudit, shouldFail } from "./audit.js";
 import { loadConfig, normalizeConfig } from "./config.js";
 import type { McpAuditConfig } from "./config.js";
@@ -30,12 +31,28 @@ interface CliArgs {
   flags: Record<string, CliFlag>;
 }
 
+const valueFlags = new Set([
+  "output", "config", "fail-on", "disable", "only", "token", "header",
+]);
+const booleanFlags = new Set([
+  "json", "sarif", "sse", "no-color", "help", "version",
+]);
+const commonFlags = new Set([
+  "output", "config", "fail-on", "disable", "only", "json", "sarif",
+  "no-color", "help", "version",
+]);
+const httpFlags = new Set([...commonFlags, "token", "header", "sse"]);
+const infoFlags = new Set(["help", "version"]);
+
 export function parseArgs(argv: string[]): CliArgs {
   const positional: string[] = [];
   const flags: Record<string, CliFlag> = {};
+  let positionalOnly = false;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg.startsWith("--")) {
+    if (!positionalOnly && arg === "--") {
+      positionalOnly = true;
+    } else if (!positionalOnly && arg.startsWith("--")) {
       let key = arg.slice(2);
       let inlineValue: string | undefined;
       const eq = key.indexOf("=");
@@ -43,38 +60,39 @@ export function parseArgs(argv: string[]): CliArgs {
         inlineValue = key.slice(eq + 1);
         key = key.slice(0, eq);
       }
-      const next = argv[i + 1];
-      if (inlineValue !== undefined) {
-        if (key === "header" && flags[key] !== undefined) {
-          const previous = flags[key];
-          flags[key] = Array.isArray(previous)
-            ? [...previous, inlineValue]
-            : typeof previous === "string"
-              ? [previous, inlineValue]
-              : inlineValue;
-        } else {
-          flags[key] = inlineValue;
+      if (!valueFlags.has(key) && !booleanFlags.has(key)) {
+        throw new Error(`Unknown option "--${key}". Run --help.`);
+      }
+      if (booleanFlags.has(key)) {
+        if (inlineValue !== undefined) {
+          throw new Error(`Option "--${key}" does not take a value.`);
         }
-      } else if (next !== undefined && !next.startsWith("--")) {
-        if (key === "header" && flags[key] !== undefined) {
-          const previous = flags[key];
-          flags[key] = Array.isArray(previous)
-            ? [...previous, next]
-            : typeof previous === "string"
-              ? [previous, next]
-              : next;
-        } else {
-          flags[key] = next;
-        }
-        i++;
-      } else {
         flags[key] = true;
+        continue;
+      }
+      const value = inlineValue ?? argv[++i];
+      if (value === undefined) throw new Error(`Option "--${key}" requires a value.`);
+      if (key === "header" && flags[key] !== undefined) {
+        const previous = flags[key];
+        flags[key] = Array.isArray(previous)
+          ? [...previous, value]
+          : [previous as string, value];
+      } else {
+        flags[key] = value;
       }
     } else {
       positional.push(arg);
     }
   }
   const [command, ...rest] = positional;
+  const allowed = command === "http" ? httpFlags
+    : command === "rules" || command === "help" || command === undefined ? infoFlags
+    : commonFlags;
+  for (const key of Object.keys(flags)) {
+    if (!allowed.has(key)) {
+      throw new Error(`Option "--${key}" is not valid for ${command ?? "this command"}.`);
+    }
+  }
   return { command, positional: rest, flags };
 }
 
@@ -101,6 +119,7 @@ OPTIONS
   --no-color             Disable colored output
   --help                 Show this help
   --version              Show version
+  --                     Treat remaining arguments as positional values
 
 EXIT CODES
   0  no findings at/above --fail-on
@@ -247,7 +266,7 @@ export async function main(argv: string[]): Promise<number> {
 // Execute only when run as a binary, not when imported.
 const invokedDirectly =
   process.argv[1] !== undefined &&
-  import.meta.url === `file://${process.argv[1]}`;
+  import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (invokedDirectly) {
   main(process.argv.slice(2))
