@@ -47,6 +47,36 @@ describe("parseArgs", () => {
     const { flags } = parseArgs(["audit", "--fail-on=high"]);
     expect(flags["fail-on"]).toBe("high");
   });
+
+  it("rejects an unknown flag instead of silently changing the audit gate", () => {
+    expect(() => parseArgs(["static", "manifest.json", "--failon", "critical"]))
+      .toThrow(/Unknown option "--failon"/);
+  });
+
+  it("rejects transport flags on unrelated commands", () => {
+    expect(() => parseArgs(["static", "manifest.json", "--header", "X-Test: yes"]))
+      .toThrow(/not valid for static/);
+  });
+
+  it("requires values for value flags", () => {
+    expect(() => parseArgs(["static", "manifest.json", "--fail-on"]))
+      .toThrow(/requires a value/);
+  });
+
+  it("validates the fail-on severity", () => {
+    const { flags } = parseArgs(["static", "manifest.json", "--fail-on", "urgent"]);
+    expect(() => overlayFlags(DEFAULT_CONFIG, flags)).toThrow(/Invalid --fail-on/);
+  });
+
+  it("accepts a value beginning with two dashes", () => {
+    expect(parseArgs(["http", "https://example.com", "--header", "--custom: value"])
+      .flags.header).toBe("--custom: value");
+  });
+
+  it("treats all arguments after -- as positional", () => {
+    expect(parseArgs(["stdio", "--", "--server-flag"]).positional)
+      .toEqual(["--server-flag"]);
+  });
 });
 
 describe("HTTP headers", () => {
