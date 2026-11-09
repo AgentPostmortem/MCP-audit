@@ -145,10 +145,11 @@ export const secretInSchemaDefault: Rule = {
     for (const tool of target.tools) {
       const props = tool.inputSchema?.properties ?? {};
       for (const [name, schema] of Object.entries(props)) {
+        const examples: unknown[] = Array.isArray(schema["examples"]) ? schema["examples"] : [];
         const candidateValues: unknown[] = [
           schema["default"],
           schema["const"],
-          ...(Array.isArray(schema["examples"]) ? schema["examples"] : []),
+          ...examples,
         ];
 
         for (const val of candidateValues) {

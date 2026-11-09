@@ -7,7 +7,7 @@ const { listToolsMock } = vi.hoisted(() => ({
 
 vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
   class Client {
-    async connect(_transport: Transport) {}
+    async connect() {}
     getServerVersion() {
       return { name: "paginated-server", version: "1.0.0" };
     }

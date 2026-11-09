@@ -16,10 +16,14 @@ import { ALL_SEVERITIES } from "./types.js";
 const require = createRequire(import.meta.url);
 const VERSION: string = (() => {
   try {
-    return require("../package.json").version;
+    const pkg: unknown = require("../package.json");
+    if (typeof pkg === "object" && pkg !== null && "version" in pkg && typeof pkg.version === "string") {
+      return pkg.version;
+    }
   } catch {
-    return "0.0.0";
+    // Use the fallback when package metadata is unavailable.
   }
+  return "0.0.0";
 })();
 
 type CliFlag = string | boolean | string[];
