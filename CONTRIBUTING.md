@@ -11,7 +11,8 @@ Thanks for considering a contribution — issues and pull requests are welcome.
 ## Making a change
 
 - Keep pull requests focused and describe **what** changed and **why**.
-- Run the project's format, lint, and test steps (see the README) before pushing.
+- Run the project's lint, typecheck, and test steps (see the README) before pushing.
+- Follow the surrounding formatting. CI does not enforce a formatter.
 - Add or update tests when you change behavior.
 - Update docs or the CHANGELOG when relevant.
 

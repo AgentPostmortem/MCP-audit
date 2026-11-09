@@ -213,8 +213,11 @@ console.log(renderJson(result));
 npm install
 npm run build      # compile TypeScript to dist/
 npm test           # run the vitest suite (includes a live mock server)
+npm run lint       # lint TypeScript with ESLint
 npm run typecheck  # type-only check
 ```
+
+The ESLint development check requires Node.js 20.19+, 22.13+, or 24+.
 
 The repo ships a real mock MCP server (`fixtures/mock-server.mjs`) so the test
 suite is hermetic and reproducible.
